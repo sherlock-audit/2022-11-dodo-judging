@@ -239,8 +239,8 @@ def main():
 
         # Sleep between issues if any edits/creations have been made
         if must_sleep:
-            print("\tSleeping for 10 seconds...")
-            time.sleep(10)
+            print("\tSleeping for 1 second...")
+            time.sleep(1)
 
     print("Referencing parent issue from duplicate issues")
     duplicate_issues = {k: v for k, v in issues.items() if v["parent"]}
@@ -279,8 +279,8 @@ def main():
 
         # Sleep between issue updates
         if must_sleep:
-            print("\t\tSleeping for 10 seconds...")
-            time.sleep(10)
+            print("\t\tSleeping for 1 second...")
+            time.sleep(1)
 
 
 if __name__ == "__main__":
