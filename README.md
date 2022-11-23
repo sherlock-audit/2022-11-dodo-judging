@@ -1,158 +1,9 @@
-# Issue M-1: Possible `DOS` inside the `mixSwap` and `_multiSwap` when for loop iteration goes long 
-
-Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/82 
-
-## Found by 
-0xNazgul, ak1
-
-## Summary
-
-When look at the `mixSwap` and `_multiSwap`, for swap, for loop is used to go through for multiple pairs.
-When number of pair is more, the loop iteration will go long and this could lead to potential DOS.
-
-## Vulnerability Detail
-in external swap,
-
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L278-L293
-
-in `_multiSwap`, 
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L393-L441
-
-For each iteration, there function calling, decoding, transferring the fund is happended.
-
-The number of iteration and work involved will be huge for `_multiSwap`
-
-when there are more number of traversal, the contract can not work and revert due to out of gas.
-
-## Impact
-The contract can not function and revert due to out of gas.
-
-## Code Snippet
-
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L393-L441
-
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L278-L293
-
-## Tool used
-
-Manual Review
-
-## Recommendation
-
-Put ca on the number of pair or splitNumber for iteration. 
-Split the swap data and process in separate transaction.
-
-# Issue M-2: DODORouteProxy.sol#L170: Lack of slippage protection for `externalSwap` 
-
-Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/77 
-
-## Found by 
-\_\_141345\_\_, jayphbee, ak1
-
-## Summary
-When calling the `externalSwap` function, `minReturnAmount` is used to protect from unfair slippage events.
-But there is no validation whether the `minReturnAmount > 0`. 
-
-I am raising this as issue by looking at other places where this validation is done.
-
-for `mixswap`, the check is done here, https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L254
-
-for `dodoMutliSwap`, the check is done here, https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L339
-
-
-## Vulnerability Detail
-
-For `externalSwap`, there is no check whether the `minReturnAmount` value is greater than zero or not.
-
-but , other type swaps has this validation. Refer the summary section for code reference where other functions has this check.
-
-## Impact
-There will not be any protection from slippage if the `minReturnAmount` is not validated.
-
-The check from `routewithdraw` will not catch this flaw.
-
-        require(receiveAmount >= minReturnAmount, "DODORouteProxy: Return amount is not enough");
-
-## Code Snippet
-
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L164-L179
-
-## Tool used
-
-Manual Review
-
-## Recommendation
-
-Check whether the `minReturnAmount > 0` inside the `externalSwap` function.
-
-or
-
-Add this check inside the `_routeWithdraw` function so that all other swaps will be covered.
-
-## Discussion
-
-**Evert0x**
-
-Low severity non-zero check
-
-
-
-# Issue M-3: calldata is not validated meaning an attacker can call arbitrary calldata to make reentrancy  or steal funds 
-
-Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/55 
-
-## Found by 
-zimu, simon135, ctf\_sec, koxuan, Bnke0x0, ak1
-
-## Summary
-Calldata is not validated meaning an attacker can call arbitrary calldata to make reentrancy or steal funds/get out of fees . When calldata bytes are not validated you can do arbitrary operations that  shouldn't be done.
-## Vulnerability Detail
-When we are swaping tokens  The attacker calls swapTarget with arbitrary `callDataConcat` which then they can use to reenter or do another operation with that calldata to call some contract. 
-From a user perspective if calldata is not validated then a user can call a swap target that can't handle the `callDataConcat` and the function will revert.
-## Impact
-An attacker can swap a lot more  in the swap target than the  function knows and then the attacker doesn't have  to pay as much in fees
-steps:
-attacker transfers 5 eth
-but in the swapTarget they swap 6 ether  then they get out of paying  more fees 
-but also if they swap less then  users can loose funds and pay to much fees 
-## Code Snippet
-```solidity 
-{
-            require(swapTarget != _DODO_APPROVE_PROXY_, "DODORouteProxy: Risk Target");
-            (bool success, bytes memory result) = swapTarget.call{
-                value: fromToken == _ETH_ADDRESS_ ? fromTokenAmount : 0
-            }(callDataConcat);
-            // revert with lowlevel info
-            if (success == false) {
-                assembly {
-                    revert(add(result,32),mload(result))
-                }
-            }
-        }
-
-```
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L205
-## Tool used
-
-Manual Review
-
-## Recommendation
-decode the data and go through some sort of input validation or make sure that the `swapTarget` can handle that calldata or that it doesn't revert.
-
-## Discussion
-
-**Attens1423**
-
-SwapTarget and ApproveTarget must be in whitelist maintained by owner. And we expect the routeProxy should not left any tokens. Users should use correct data to avoid gas wasting. We will add ETH check
-
-
-
-# Issue M-4: Use safeTransferFrom() instead of transferFrom(). 
+# Issue M-1: Use safeTransferFrom() instead of transferFrom(). 
 
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/47 
 
 ## Found by 
-yixxas, Nyx, 0x4non, Tomo, sach1r0
+sach1r0, Nyx, yixxas, 0x4non, Tomo
 
 ## Summary
 
@@ -181,7 +32,7 @@ We think a medium is still valid, although no direct loss of funds, a failed tok
 
 
 
-# Issue M-5: Rounding error when call function `dodoMultiswap()` can lead to revert of transaction or fund of user 
+# Issue M-2: Rounding error when call function `dodoMultiswap()` can lead to revert of transaction or fund of user 
 
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/45 
 
@@ -225,12 +76,12 @@ Manual review
 ## Recommendation
 Add a accumulation variable to maintain the total amount is transfered after each split swap. In the last split swap, instead of calculating the `curAmount` by formula above, just take the remaining amount to swap. 
 
-# Issue M-6: `universalApproveMax` will not work for some tokens that don't support approve `type(uint256).max` amount. 
+# Issue M-3: `universalApproveMax` will not work for some tokens that don't support approve `type(uint256).max` amount. 
 
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/41 
 
 ## Found by 
-jayphbee, Tomo
+Tomo, jayphbee
 
 ## Summary
 `universalApproveMax` will not work for some tokens that don't support approve `type(uint256).max` amount.
@@ -272,220 +123,7 @@ Manual Review
 ## Recommendation
 I would suggest approve only the necessay amount of token to the `approveTarget` instead of the `type(uint256).max` amount.
 
-# Issue M-7: `mixSwap` works incorrectly if `mixPairs` length exceed 256. 
-
-Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/39 
-
-## Found by 
-jayphbee
-
-## Summary
-`mixSwap` works incorrectly if `mixPairs` length exceed 256.
-
-## Vulnerability Detail
-There's no upper bound check for `mixPairs` length, and the `directions` param whose value will constantly be 0 after 256 rounds right shift. That is to say if the `mixPairs` length exceed 256, the `IDODOAdapter(mixAdapters[i]).sellBase` is always called, which is not the expected behivour.
-
-
-## Impact
-`mixSwap` works incorrectly after `mixPairs` length exceed 256.
-
-## Code Snippet
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L278-L293
-```solidity
-for (uint256 i = 0; i < mixPairs.length; i++) {
-            if (directions & 1 == 0) {
-                IDODOAdapter(mixAdapters[i]).sellBase(
-                    assetTo[i + 1],
-                    mixPairs[i],
-                    moreInfos[i]
-                );
-            } else {
-                IDODOAdapter(mixAdapters[i]).sellQuote(
-                    assetTo[i + 1],
-                    mixPairs[i],
-                    moreInfos[i]
-                );
-            }
-            directions = directions >> 1;
-        }
-```
-
-## Tool used
-
-Manual Review
-
-## Recommendation
-Add upper bound length check for `mixPairs`.
-```solidity
-require(mixPairs.length <= 256, "DODORouteProxy: PAIRS_LENGTH_TOO_LARGE");
-```
-
-## Discussion
-
-**Attens1423**
-
-This is the routeProxy suitable for our own aggregator and users should use right data to avoid gas wasting
-
-
-
-# Issue M-8: DODORouteProxy#mixSwap doesn't validate all input array lengths 
-
-Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/31 
-
-## Found by 
-ctf\_sec, 0x52
-
-## Summary
-
-DODORouteProxy#mixSwap validates that most input arrays are the same length but fails to validate the moreInfos array. An array of incorrect length could result in wasted gas on failed swaps or incorrect info being passed to adapters.
-
-## Vulnerability Detail
-
-        require(mixPairs.length > 0, "DODORouteProxy: PAIRS_EMPTY");
-        require(mixPairs.length == mixAdapters.length, "DODORouteProxy: PAIR_ADAPTER_NOT_MATCH");
-        require(mixPairs.length == assetTo.length - 1, "DODORouteProxy: PAIR_ASSETTO_NOT_MATCH");
-        require(minReturnAmount > 0, "DODORouteProxy: RETURN_AMOUNT_ZERO");
-
-In DODORouteProxy#mixSwap input length checks, moreInfos is missing from the length validation. 
-
-## Impact
-
-An array of incorrect length could result in wasted gas on failed swaps or incorrect info being passed to adapters leading to unexpected results.
-
-## Code Snippet
-
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L238-L311
-
-## Tool used
-
-Manual Review
-
-## Recommendation
-
-Add a check for moreInfos in the validation block:
-
-    +   require(mixPairs.length == moreInfos.length, "DODORouteProxy: PAIR_MOREINFOS_NOT_MATCH");
-
-# Issue M-9: Hacker can craft malicious 1inch trade to steal the dusted fund in DODORouteProxy.sol 
-
-Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/26 
-
-## Found by 
-ctf\_sec
-
-## Summary
-
-Hacker can craft malicious 1inch trade to steal the fund in DODORouteProxy.sol
-
-## Vulnerability Detail
-
-In DODORouteProxy.sol, We have the superWithdraw function
-
-```solidity
-/// @notice used for emergency, generally there wouldn't be tokens left
-function superWithdraw(address token) public onlyOwner {
-    if(token != _ETH_ADDRESS_) {
-        uint256 restAmount = IERC20(token).universalBalanceOf(address(this));
-        IERC20(token).universalTransfer(payable(routeFeeReceiver), restAmount);
-    } else {
-        uint256 restAmount = address(this).balance;
-        payable(routeFeeReceiver).transfer(restAmount);
-    }
-}
-```
-
-as the comment suggest, there may be case if the user's trade has dust balance or user send the token to the contract by mistake. 
-
-But before the admin can step in a withdraw the fund, a hacker can step, craft malicious 1inch trade to steal the fund in DODORouteProxy.sol
-
-The attack vector is enabled by multiple traits of the DODORouteProxy.sol:
-
-1. the 1inch router is whitelisted.
-
-As suggested in the comment above the DODORouteProxy.sol
-
-> ExternalSwap is for other routers like 0x, 1inch and paraswap
-
-2. Unlimited allowance is given in the code.
-
-```solidity
-require(isApproveWhiteListedContract[approveTarget], "DODORouteProxy: Not Whitelist Appprove Contract");  
-
-// transfer in fromToken
-if (fromToken != _ETH_ADDRESS_) {
-    // approve if needed
-    if (approveTarget != address(0)) {
-        IERC20(fromToken).universalApproveMax(approveTarget, fromTokenAmount);
-    }
-
-    IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(
-        fromToken,
-        msg.sender,
-        address(this),
-        fromTokenAmount
-    );
-}
-```
-
-3. 1inch can be used to pull an arbitrary amount of funds from the caller and execute arbitrary call
-
-The design of 1inch's AggregationRouterV4 can be used to pull funds from the DODORouteProxy and execute arbitrary external call:
-
-https://polygonscan.com/address/0x1111111254fb6c44bAC0beD2854e76F90643097d#code#L2309
-
-Please see L2309-2321.
-
-```solidity
-if (!srcETH) {
-    _permit(address(srcToken), desc.permit);
-    srcToken.safeTransferFrom(msg.sender, desc.srcReceiver, desc.amount);
-}
-
-{
-    bytes memory callData = abi.encodePacked(caller.callBytes.selector, bytes12(0), msg.sender, data);
-    // solhint-disable-next-line avoid-low-level-calls
-    (bool success, bytes memory result) = address(caller).call{value: msg.value}(callData);
-    if (!success) {
-        revert(RevertReasonParser.parse(result, "callBytes failed: "));
-    }
-}
-```
-
-4. The low level call data is supplied by user
-
-```sollidity
-(bool success, bytes memory result) = swapTarget.call{
-    value: fromToken == _ETH_ADDRESS_ ? fromTokenAmount : 0
-}(callDataConcat);
-```
-
-## Impact
-
-All fund in the contract can be taken before admin can superWithdraw.
-
-## Code Snippet
-
-https://polygonscan.com/address/0x1111111254fb6c44bAC0beD2854e76F90643097d#code#L2309
-
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L158-L224
-
-## Tool used
-
-Manual Review
-
-## Recommendation
-
-Make sure no fund is left after the transaction is finished, add balanceOf(address(this)) check to make sure there is no dust amount in the contract.
-
-## Discussion
-
-**Attens1423**
-
-we expect the routeProxy should not left any tokens. Users should be responsible for their own tokens.
-
-
-
-# Issue M-10: Issue when handling native ETH trade and WETH trade in DODO RouterProxy#externalSwap 
+# Issue M-4: Issue when handling native ETH trade and WETH trade in DODO RouterProxy#externalSwap 
 
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/20 
 
@@ -769,12 +407,12 @@ Even tough the API is requiring WETH we still think it's a valid issue as the co
 
 
 
-# Issue M-11: `call()` should be used instead of `transfer()` on an address payable 
+# Issue M-5: `call()` should be used instead of `transfer()` on an address payable 
 
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/5 
 
 ## Found by 
-0xNazgul, yixxas, 8olidity, defsec, Nyx, 0x4non, ElKu, rvierdiiev, Bnke0x0, Tomo, virtualfact, pashov, sach1r0, ak1
+ak1, Nyx, sach1r0, pashov, 0xNazgul, yixxas, 0x4non, virtualfact, Bnke0x0, Tomo, rvierdiiev, 8olidity, ElKu, defsec
 
 ## Summary
 
