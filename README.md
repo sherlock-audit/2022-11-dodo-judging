@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/47 
 
 ## Found by 
-sach1r0, Nyx, yixxas, 0x4non, Tomo
+0x4non, Nyx, sach1r0, yixxas, Tomo
 
 ## Summary
 
@@ -76,54 +76,7 @@ Manual review
 ## Recommendation
 Add a accumulation variable to maintain the total amount is transfered after each split swap. In the last split swap, instead of calculating the `curAmount` by formula above, just take the remaining amount to swap. 
 
-# Issue M-3: `universalApproveMax` will not work for some tokens that don't support approve `type(uint256).max` amount. 
-
-Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/41 
-
-## Found by 
-Tomo, jayphbee
-
-## Summary
-`universalApproveMax` will not work for some tokens that don't support approve `type(uint256).max` amount.
-
-## Vulnerability Detail
-There are tokens that doesn't support approve spender `type(uint256).max` amount. So the `universalApproveMax` will not work for some tokens like `UNI` or `COMP` who will revert when approve `type(uint256).max` amount.
-
-## Impact
-Tokens that don't support approve `type(uint256).max` amount could not be swapped by calling `externalSwap` function.
-
-## Code Snippet
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/DODORouteProxy.sol#L181-L183
-```solidity
-            if (approveTarget != address(0)) {
-                IERC20(fromToken).universalApproveMax(approveTarget, fromTokenAmount);
-            }
-```
-https://github.com/sherlock-audit/2022-11-dodo/blob/main/contracts/SmartRoute/lib/UniversalERC20.sol#L36-L48
-```solidity
-function universalApproveMax(
-        IERC20 token,
-        address to,
-        uint256 amount
-    ) internal {
-        uint256 allowance = token.allowance(address(this), to);
-        if (allowance < amount) {
-            if (allowance > 0) {
-                token.safeApprove(to, 0);
-            }
-            token.safeApprove(to, type(uint256).max);
-        }
-    }
-```
-
-## Tool used
-
-Manual Review
-
-## Recommendation
-I would suggest approve only the necessay amount of token to the `approveTarget` instead of the `type(uint256).max` amount.
-
-# Issue M-4: Issue when handling native ETH trade and WETH trade in DODO RouterProxy#externalSwap 
+# Issue M-3: Issue when handling native ETH trade and WETH trade in DODO RouterProxy#externalSwap 
 
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/20 
 
@@ -405,14 +358,19 @@ In our api, we require toToken is WETH when contructing callData. We will add so
 
 Even tough the API is requiring WETH we still think it's a valid issue as the contract has a payable modifier. 
 
+**Attens1423**
+
+We will add this check: require(msg.value == fromTokenAmount, "invalid ETH amount");
+As the fromToken is ETH, we won't deposit it into routeProxy, we will transfer the ETH amount directly.
 
 
-# Issue M-5: `call()` should be used instead of `transfer()` on an address payable 
+
+# Issue M-4: `call()` should be used instead of `transfer()` on an address payable 
 
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/5 
 
 ## Found by 
-ak1, Nyx, sach1r0, pashov, 0xNazgul, yixxas, 0x4non, virtualfact, Bnke0x0, Tomo, rvierdiiev, 8olidity, ElKu, defsec
+0x4non, Bnke0x0, Nyx, sach1r0, ElKu, pashov, defsec, yixxas, ak1, rvierdiiev, 8olidity, virtualfact, Tomo, 0xNazgul
 
 ## Summary
 
