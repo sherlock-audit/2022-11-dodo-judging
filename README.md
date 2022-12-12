@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/47 
 
 ## Found by 
-0x4non, Nyx, sach1r0, yixxas, Tomo
+0x4non, Tomo, Nyx, sach1r0, yixxas
 
 ## Summary
 
@@ -29,6 +29,14 @@ Recommend using OpenZeppelin's SafeERC20 versions with the safeTransfer and safe
 **Evert0x**
 
 We think a medium is still valid, although no direct loss of funds, a failed token transfer should be catched.
+
+**Attens1423**
+
+https://github.com/DODOEX/dodo-route-contract/pull/4
+
+**aktech297**
+
+Fixes are verified. Contract is using openzeppelin's safeTransfer.
 
 
 
@@ -75,6 +83,18 @@ Manual review
 
 ## Recommendation
 Add a accumulation variable to maintain the total amount is transfered after each split swap. In the last split swap, instead of calculating the `curAmount` by formula above, just take the remaining amount to swap. 
+
+## Discussion
+
+**Attens1423**
+
+https://github.com/DODOEX/dodo-route-contract/pull/3
+
+**aktech297**
+
+Fixes are verified.
+
+
 
 # Issue M-3: Issue when handling native ETH trade and WETH trade in DODO RouterProxy#externalSwap 
 
@@ -363,6 +383,15 @@ Even tough the API is requiring WETH we still think it's a valid issue as the co
 We will add this check: require(msg.value == fromTokenAmount, "invalid ETH amount");
 As the fromToken is ETH, we won't deposit it into routeProxy, we will transfer the ETH amount directly.
 
+**Attens1423**
+
+https://github.com/DODOEX/dodo-route-contract/pull/2
+
+**aktech297**
+
+comments are added at the start of the function.
+Fixes are done as mentioned in, `We will add this check: require(msg.value == fromTokenAmount, "invalid ETH amount");`
+
 
 
 # Issue M-4: `call()` should be used instead of `transfer()` on an address payable 
@@ -370,7 +399,7 @@ As the fromToken is ETH, we won't deposit it into routeProxy, we will transfer t
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/5 
 
 ## Found by 
-0x4non, Bnke0x0, Nyx, sach1r0, ElKu, pashov, defsec, yixxas, ak1, rvierdiiev, 8olidity, virtualfact, Tomo, 0xNazgul
+pashov, 8olidity, virtualfact, ak1, defsec, yixxas, 0x4non, ElKu, Tomo, Nyx, rvierdiiev, Bnke0x0, 0xNazgul, sach1r0
 
 ## Summary
 
@@ -399,4 +428,21 @@ Use `call()` instead of `transfer()`, but be sure to respect the CEI pattern and
 
 More info on;
 [https://swcregistry.io/docs/SWC-134](https://swcregistry.io/docs/SWC-134)
+
+## Discussion
+
+**Attens1423**
+
+https://github.com/DODOEX/dodo-route-contract/pull/5
+
+**aktech297**
+
+Though the changes look pretty straight forward, i would suggest to include test cases for re-entrency to all types swaps.
+
+**hrishibhat**
+
+Based on comments & discussions with the Senior:
+The fix looks good, additionally Senior suggests adding necessary re-reentrancy protection to relevant swap functions. 
+
+
 
