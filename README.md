@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/47 
 
 ## Found by 
-0x4non, Tomo, Nyx, sach1r0, yixxas
+Nyx, 0x4non, yixxas, Tomo, sach1r0
 
 ## Summary
 
@@ -399,7 +399,7 @@ Fixes are done as mentioned in, `We will add this check: require(msg.value == fr
 Source: https://github.com/sherlock-audit/2022-11-dodo-judging/issues/5 
 
 ## Found by 
-pashov, 8olidity, virtualfact, ak1, defsec, yixxas, 0x4non, ElKu, Tomo, Nyx, rvierdiiev, Bnke0x0, 0xNazgul, sach1r0
+virtualfact, Nyx, 0x4non, 8olidity, 0xNazgul, yixxas, pashov, rvierdiiev, Bnke0x0, sach1r0, Tomo, defsec, ElKu, ak1
 
 ## Summary
 
